@@ -48,6 +48,7 @@
 
   const scene = $('scene');
   const statusEl = $('status');
+  const bgm = $('bgm');
   const announce = (message) => { statusEl.textContent = message; };
 
   if (window.CSS && CSS.registerProperty && !reduceMotion) scene.classList.add('has-bloom');
@@ -477,6 +478,8 @@
       scene.classList.add('is-lit');
       $('lampTarget').disabled = true;
       announce(TEXT.lit);
+      bgm.currentTime = 0;
+      bgm.play().catch((error) => console.warn('Background music could not start:', error));
       try { navigator.vibrate?.(30); } catch { /* vibration is optional */ }
       if (!reduceMotion) embers.start();
       setTimeout(showHero, timing.lampToHero);
