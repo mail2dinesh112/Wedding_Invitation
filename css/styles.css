@@ -1,0 +1,1665 @@
+/* ==========================================================================
+   Wedding invitation — Dineshkumar & Suthesi
+   Flow: lamp → invitation card → temple → countdown → gratitude
+   Screens are stacked in one grid cell and cross-faded via classes on .scene:
+   .is-lit → .to-hero → .to-temple → .temple-ready → .to-countdown → .to-gratitude
+   ========================================================================== */
+
+/* ---- Tokens ------------------------------------------------------------- */
+:root {
+  --night: #17132c;
+  --cream: #fff1d2;
+  --gold: #f1d49b;
+  --gold-bright: #ffe09a;
+  --gold-line: rgba(224, 190, 124, .9);
+  --plum: #57134b;
+  --panel: rgba(31, 18, 24, .76);
+
+  --font-tamil: 'Kavivanar', cursive;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-slow: cubic-bezier(.2, .6, .2, 1);
+
+  /* Lamp bowl centre, as a % of the 2:3 scene image. */
+  --lamp-x: 50%;
+  --lamp-y: 43%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--night);
+}
+
+/* Light spreads outward from the lamp (needs @property; falls back to a crossfade). */
+@property --reveal {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Scene & stacked screens ------------------------------------------- */
+.scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--night);
+  /* Scene width: the largest 2:3 box that fits the viewport. */
+  --sw: min(100vw, calc(100vh * 2 / 3));
+  --sw: min(100vw, calc(100dvh * 2 / 3));
+}
+
+.scene>.stage,
+.scene>.hero,
+.scene>.temple-screen,
+.scene>.countdown-screen,
+.scene>.gratitude-screen {
+  grid-area: 1 / 1;
+}
+
+/* Hidden-by-default screens share the same fade rules. */
+.hero,
+.temple-screen,
+.countdown-screen,
+.gratitude-screen {
+  position: relative;
+  width: var(--sw);
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
+}
+
+.screen-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.025);
+  transition: transform 12s var(--ease-slow);
+}
+
+/* ---- 1. Lamp stage ------------------------------------------------------ */
+/* The stage is exactly the 2:3 image box, so every % below maps to image coordinates. */
+.stage {
+  position: relative;
+  width: var(--sw);
+  aspect-ratio: 2 / 3;
+  transform-origin: 50% 43%;
+  transition: opacity 1.5s ease;
+}
+
+.scene.to-hero .stage {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scene-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  transition: opacity 1.8s var(--ease-out), transform 2s var(--ease-out), filter 1.8s ease;
+}
+
+.closed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.opened {
+  opacity: 0;
+  transform: scale(1.012);
+  filter: brightness(1.12);
+}
+
+.scene.is-lit .closed {
+  opacity: 0;
+  transform: scale(1.018);
+}
+
+.scene.is-lit .opened {
+  opacity: 1;
+  transform: scale(1);
+  filter: brightness(1);
+}
+
+/* Cinematic bloom: light radiates from the lamp across the temple. */
+.scene.has-bloom .opened {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: none;
+  -webkit-mask-image: radial-gradient(circle at var(--lamp-x) var(--lamp-y), #000 calc(var(--reveal) - 22%), transparent var(--reveal));
+  mask-image: radial-gradient(circle at var(--lamp-x) var(--lamp-y), #000 calc(var(--reveal) - 22%), transparent var(--reveal));
+}
+
+.scene.has-bloom.is-lit .opened {
+  animation: bloom 3.2s .6s cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+.scene.has-bloom .closed {
+  transition: none;
+  transform: none;
+}
+
+.scene.has-bloom.is-lit .closed {
+  opacity: 1;
+  animation: hideClosed .01s 4s forwards;
+}
+
+@keyframes bloom {
+  from {
+    --reveal: 0%;
+  }
+
+  to {
+    --reveal: 140%;
+  }
+}
+
+@keyframes hideClosed {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Camera: slow push-in toward the lamp. */
+.scene.is-lit .stage {
+  animation: push 12s var(--ease-slow) forwards;
+}
+
+@keyframes push {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.012);
+  }
+}
+
+/* Warm light cast over the whole scene. */
+.warm,
+.vignette,
+.flash,
+.ripple,
+.embers {
+  position: absolute;
+  pointer-events: none;
+}
+
+.warm {
+  inset: 0;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle at var(--lamp-x) var(--lamp-y), rgba(255, 176, 70, .6) 0%, rgba(255, 120, 30, .2) 34%, rgba(255, 100, 20, 0) 64%);
+}
+
+.is-lit .warm {
+  animation: warmIn 2.6s .3s ease-out forwards, warmFlick 2.7s 2.9s ease-in-out infinite;
+}
+
+@keyframes warmIn {
+  to {
+    opacity: .28;
+  }
+}
+
+@keyframes warmFlick {
+
+  0%,
+  100% {
+    opacity: .28;
+  }
+
+  18% {
+    opacity: .31;
+  }
+
+  34% {
+    opacity: .26;
+  }
+
+  52% {
+    opacity: .3;
+  }
+
+  71% {
+    opacity: .27;
+  }
+}
+
+.vignette {
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, rgba(8, 5, 25, 0) 38%, rgba(8, 5, 25, .72) 100%);
+}
+
+.is-lit .vignette {
+  animation: vignetteOut 3.6s .4s ease-out forwards;
+}
+
+@keyframes vignetteOut {
+  to {
+    opacity: .55;
+  }
+}
+
+/* Tap target over the lamp. */
+.lamp-target {
+  position: absolute;
+  z-index: 3;
+  left: 33%;
+  top: 28%;
+  width: 34%;
+  height: 54%;
+  padding: 0;
+  border: 0;
+  border-radius: 48% 48% 35% 35%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lamp-target:focus-visible {
+  outline: 2px solid #ffe6a3;
+  outline-offset: 3px;
+}
+
+.is-lit .lamp-target {
+  pointer-events: none;
+}
+
+/* Idle invitation: soft ripples around the lamp bowl. */
+.ripple {
+  left: var(--lamp-x);
+  top: var(--lamp-y);
+  width: 24%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.ripple i {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 225, 151, .5);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ripple 3.4s ease-out infinite;
+}
+
+.ripple i:nth-child(2) {
+  animation-delay: 1.7s;
+}
+
+.is-lit .ripple {
+  display: none;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(.5);
+    opacity: .35;
+  }
+
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* Ignition flash. */
+.flash {
+  left: var(--lamp-x);
+  top: var(--lamp-y);
+  width: 60%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(.3);
+  border-radius: 50%;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle, rgba(255, 240, 190, .95) 0%, rgba(255, 180, 80, .5) 30%, rgba(255, 140, 40, 0) 65%);
+}
+
+.is-lit .flash {
+  animation: flash 1.6s .2s ease-out forwards;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.4);
+  }
+
+  25% {
+    opacity: .3;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Flames: ignite (outer) > sway (middle) > flicker (inner).
+   Per-flame inputs: --x/--y (base, % of image), --s (size), --d (ignite delay),
+   --fd (flicker period), --fo (flicker offset). */
+.flame {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 2.5%;
+  aspect-ratio: 1 / 2;
+  transform: translate(-50%, -100%) scale(0);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.is-lit .flame {
+  animation: ignite 1.2s var(--d) ease-out forwards;
+}
+
+@keyframes ignite {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(calc(var(--s) * .3));
+  }
+
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(calc(var(--s) * 1.06));
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(var(--s));
+  }
+}
+
+.halo {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 380%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle, rgba(255, 196, 96, .6) 0%, rgba(255, 150, 50, .25) 35%, rgba(255, 120, 30, 0) 68%);
+}
+
+.is-lit .halo {
+  animation: haloIn .8s var(--d) ease-out forwards,
+    haloFlick var(--fd) calc(var(--d) + .8s) ease-in-out infinite;
+}
+
+@keyframes haloIn {
+  to {
+    opacity: .4;
+  }
+}
+
+@keyframes haloFlick {
+
+  0%,
+  100% {
+    opacity: .4;
+  }
+
+  22% {
+    opacity: .46;
+  }
+
+  41% {
+    opacity: .34;
+  }
+
+  68% {
+    opacity: .44;
+  }
+
+  84% {
+    opacity: .37;
+  }
+}
+
+.sway {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+}
+
+.is-lit .sway {
+  animation: sway calc(var(--fd) * 2.6) ease-in-out infinite alternate;
+}
+
+@keyframes sway {
+  from {
+    transform: rotate(-.8deg);
+  }
+
+  to {
+    transform: rotate(.8deg);
+  }
+}
+
+.core {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 50% 100%;
+  mix-blend-mode: screen;
+  filter: blur(.4px);
+}
+
+.is-lit .core {
+  animation: flicker var(--fd) linear var(--fo) infinite;
+}
+
+@keyframes flicker {
+
+  0%,
+  100% {
+    transform: scale(1, 1);
+    opacity: 1;
+  }
+
+  12% {
+    transform: scale(.98, 1.03);
+    opacity: .96;
+  }
+
+  27% {
+    transform: scale(1.02, .98) skewX(.8deg);
+    opacity: 1;
+  }
+
+  44% {
+    transform: scale(.99, 1.04) skewX(-.8deg);
+    opacity: .97;
+  }
+
+  61% {
+    transform: scale(1.02, .98);
+    opacity: 1;
+  }
+
+  79% {
+    transform: scale(.98, 1.03) skewX(.6deg);
+    opacity: .96;
+  }
+}
+
+/* Rising embers (spawned by script). */
+.embers {
+  inset: 0;
+  overflow: visible;
+}
+
+.ember {
+  position: absolute;
+  left: var(--ex);
+  top: var(--ey);
+  width: var(--es);
+  height: var(--es);
+  border-radius: 50%;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle, #fff3c0 0%, #ffb347 55%, rgba(255, 120, 20, 0) 100%);
+  animation: ember var(--et) ease-out forwards;
+}
+
+@keyframes ember {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+
+  15% {
+    opacity: .6;
+  }
+
+  60% {
+    opacity: .4;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--edx), var(--edy)) scale(.2);
+  }
+}
+
+/* Hint pill. */
+.hint {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border: 1px solid rgba(255, 225, 151, .72);
+  border-radius: 999px;
+  background: rgba(30, 19, 35, .5);
+  color: #fff2c8;
+  font: 14px/1.4 var(--font-tamil);
+  white-space: nowrap;
+  text-shadow: 0 1px 8px #000;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  pointer-events: none;
+  transition: opacity .45s ease, transform .6s ease;
+}
+
+.is-lit .hint {
+  opacity: 0;
+  transform: translate(-50%, 8px);
+}
+
+/* ---- 2. Invitation card ------------------------------------------------- */
+.hero,
+.hero * {
+  touch-action: none;
+}
+
+.hero {
+  transition: opacity 2s ease 1.3s, visibility 0s linear 1.3s;
+}
+
+.scene.to-hero .hero {
+  opacity: 1;
+  visibility: visible;
+}
+
+.scene.to-temple .hero {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
+}
+
+.hero-img {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.03);
+  will-change: opacity, transform;
+}
+
+.hero-arch {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.06);
+  will-change: opacity, transform;
+}
+
+.scene.to-hero .hero-arch {
+  animation: invitationArchIn 2s .3s cubic-bezier(.22, .61, .36, 1) forwards;
+}
+
+.scene.to-hero .hero-img {
+  animation: invitationBackgroundIn 2.6s 2.6s ease-in-out forwards;
+}
+
+@keyframes invitationArchIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes invitationBackgroundIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes invitationGlowIn {
+  to {
+    opacity: .8;
+  }
+}
+
+@keyframes invitationGlowPulse {
+
+  0%,
+  100% {
+    opacity: .8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    opacity: .5;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+.hero-petals {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-petal {
+  position: absolute;
+  top: -6%;
+  border-radius: 60% 0 60% 0;
+  background: radial-gradient(circle at 30% 30%, #fff, #f6e7c1);
+  opacity: 0;
+  animation: invitationPetalFall linear infinite paused;
+}
+
+.scene.to-hero .hero-petal {
+  animation-play-state: running;
+}
+
+@keyframes invitationPetalFall {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0);
+    opacity: 0;
+  }
+
+  10%,
+  90% {
+    opacity: .85;
+  }
+
+  100% {
+    transform: translate3d(var(--petal-drift), 112vh, 0) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+.wedding-verse,
+.welcome-message {
+  position: absolute;
+  z-index: 3;
+  left: 4%;
+  width: 92%;
+  margin: 0;
+  color: var(--cream);
+  font-family: var(--font-tamil);
+  text-align: center;
+}
+
+.wedding-verse {
+  top: 19%;
+  font-size: calc(var(--sw) * .0356);
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.couple-name-art {
+  position: absolute;
+  z-index: 3;
+  top: 31%;
+  left: 50%;
+  width: 58%;
+  height: auto;
+  opacity: 0;
+  transform: translateX(-50%) scale(1.03);
+  will-change: opacity, transform;
+}
+
+.scene.to-hero .couple-name-art {
+  animation: invitationNameIn 2.6s 2.6s ease-in-out forwards;
+}
+
+@keyframes invitationNameIn {
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.welcome-message {
+  top: 58.5%;
+  font-size: calc(var(--sw) * .024);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.hero-couple-wrap {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: -3%;
+  width: 54%;
+  transform: translateX(-50%);
+}
+
+.hero-swipe-hint {
+  position: absolute;
+  z-index: 7;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+}
+
+.scene.to-hero .hero-swipe-hint {
+  animation: hintReveal .7s 5.2s ease-out forwards;
+}
+
+.hero-swipe-hint:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+.couple-portrait {
+  position: relative;
+  display: block;
+  height: auto;
+  width: 100%;
+  opacity: 0;
+  transform: scale(1.03);
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .45));
+  will-change: opacity, transform;
+}
+
+.hero-couple-glow {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 120%;
+  height: 90%;
+  background: radial-gradient(circle, rgba(255, 214, 120, .55), rgba(255, 214, 120, 0) 65%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.scene.to-hero .couple-portrait {
+  animation: invitationCoupleReveal 2.6s 2.6s ease-in-out forwards;
+}
+
+.scene.to-hero .hero-couple-glow {
+  animation: invitationGlowIn 3s ease-out 5.2s forwards,
+    invitationGlowPulse 5s ease-in-out 8.2s infinite;
+}
+
+@keyframes invitationCoupleReveal {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ---- 3. Temple screen --------------------------------------------------- */
+/* Pointer-based swipe detection needs touch-action:none on the touched element itself —
+   a value on the ancestor alone lets the browser claim the gesture (pointercancel). */
+.temple-screen,
+.temple-screen * {
+  touch-action: none;
+}
+
+.countdown-screen,
+.countdown-screen * {
+  touch-action: none;
+}
+
+.scene.to-temple .temple-screen {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.scene.to-countdown .temple-screen {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
+}
+
+.scene.to-temple .temple-background,
+.scene.to-countdown .countdown-background,
+.scene.to-gratitude .gratitude-background {
+  transform: scale(1);
+}
+
+.temple-screen::after {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 27%;
+  background: linear-gradient(to top, rgba(0, 0, 0, .28), rgba(0, 0, 0, .14) 28%, rgba(0, 0, 0, .04) 62%, transparent);
+  box-shadow: 0 -12px 38px rgba(0, 0, 0, .14);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .8s ease;
+}
+
+.scene.temple-ready .temple-screen::after {
+  opacity: 1;
+}
+
+.temple-logo {
+  position: absolute;
+  z-index: 1;
+  top: 3%;
+  left: 50%;
+  width: 96%;
+  height: auto;
+  opacity: 0;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 12px rgba(20, 10, 25, .6));
+}
+
+.scene.to-temple .temple-logo {
+  animation: fadeIn 1.8s .35s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Bharathiyar's verse: glass lettering only, nothing behind it.
+   The text is a translucent gradient with a thin bright edge. Each line surfaces from "water":
+   it rises out of a blur while a ripple distortion (js/main.js → poemWater) settles to still. */
+.temple-poem,
+.temple-poem blockquote {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.temple-poem {
+  position: absolute;
+  z-index: 1;
+  top: 43%;
+  right: 5%;
+  left: 5%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.temple-poem-line {
+  margin: 0;
+  font: 400 clamp(11px, calc(var(--sw) * .0335), 15px)/1.95 var(--font-tamil);
+  filter: blur(0) drop-shadow(0 1px 5px rgba(18, 8, 24, .7)) drop-shadow(0 0 10px rgba(255, 255, 255, .18));
+  opacity: 0;
+  transform: translateY(16px) scaleY(.9);
+}
+
+.glass-text {
+  display: inline-block;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(255, 245, 225, .66));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: .35px rgba(255, 255, 255, .6);
+}
+
+.temple-poem-credit {
+  margin-top: .5em;
+  font-size: clamp(10px, calc(var(--sw) * .028), 12.5px);
+  letter-spacing: .02em;
+}
+
+.scene.to-temple .temple-poem-line {
+  animation: poemSurface 2.4s calc(1.3s + var(--i) * .6s) cubic-bezier(.2, .7, .2, 1) forwards;
+}
+
+@keyframes poemSurface {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scaleY(.9);
+    filter: blur(12px) drop-shadow(0 1px 5px rgba(18, 8, 24, .7)) drop-shadow(0 0 10px rgba(255, 255, 255, .18));
+  }
+
+  55% {
+    opacity: .9;
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0) drop-shadow(0 1px 5px rgba(18, 8, 24, .7)) drop-shadow(0 0 10px rgba(255, 255, 255, .18));
+  }
+}
+
+.temple-directions {
+  position: absolute;
+  z-index: 2;
+  bottom: max(64px, calc(env(safe-area-inset-bottom) + 56px));
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 174px;
+  min-height: 48px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 225, 151, .88);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(105, 68, 34, .94), rgba(48, 25, 27, .96));
+  box-shadow: 0 7px 20px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 244, 204, .18);
+  color: var(--cream);
+  text-decoration: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  transition: opacity .6s ease, transform .6s ease, visibility 0s linear .6s,
+    box-shadow .25s ease, filter .25s ease;
+}
+
+.scene.temple-ready .temple-directions {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%);
+  transition-delay: 0s;
+}
+
+.scene.temple-ready .temple-directions:hover {
+  box-shadow: 0 9px 24px rgba(0, 0, 0, .48), 0 0 16px rgba(255, 216, 145, .2), inset 0 1px 0 rgba(255, 244, 204, .24);
+  filter: brightness(1.12);
+  transform: translate(-50%, -2px);
+}
+
+.scene.temple-ready .temple-directions:hover .temple-directions-arrow {
+  transform: translate(2px, -2px);
+}
+
+.temple-directions:active {
+  filter: brightness(.96);
+  transform: translate(-50%, 0);
+}
+
+.temple-directions:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+}
+
+.temple-directions-icon {
+  flex: 0 0 auto;
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: var(--gold-bright);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+  filter: drop-shadow(0 0 4px rgba(255, 214, 133, .4));
+}
+
+.temple-directions-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.temple-directions-label {
+  font: 700 clamp(10px, calc(var(--sw) * .025), 12px)/1 Arial, sans-serif;
+  letter-spacing: .1em;
+}
+
+.temple-directions-subtitle {
+  color: #e9d4ad;
+  font: 400 clamp(9px, calc(var(--sw) * .022), 11px)/1.1 var(--font-tamil);
+}
+
+.temple-directions-arrow {
+  color: var(--gold-bright);
+  font: 600 18px/1 system-ui, sans-serif;
+  transition: transform .25s ease;
+}
+
+.temple-swipe-hint {
+  position: absolute;
+  z-index: 2;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  cursor: pointer;
+}
+
+.scene.temple-ready .temple-swipe-hint {
+  animation: hintReveal .7s ease-out forwards;
+}
+
+.temple-swipe-hint:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+@keyframes hintReveal {
+  to {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ---- 4. Countdown screen ------------------------------------------------ */
+.scene.to-countdown .countdown-screen {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.scene.to-countdown.to-gratitude .countdown-screen {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
+}
+
+.temple-countdown {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 4%;
+  left: 4%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, calc(var(--sw) * .028), 22px);
+  opacity: 0;
+  transform: translateY(calc(-50% + 14px));
+  pointer-events: none;
+}
+
+.scene.to-countdown .temple-countdown {
+  animation: countdownRiseIn .9s .45s ease-out forwards;
+}
+
+@keyframes countdownRiseIn {
+  to {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+}
+
+.countdown-verse {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+}
+
+.countdown-verse-line {
+  margin: 0;
+  color: var(--cream);
+  font: 400 clamp(12px, calc(var(--sw) * .034), 17px)/1.8 var(--font-tamil);
+  text-align: center;
+  text-shadow: 0 1px 5px rgba(18, 8, 24, .7), 0 0 10px rgba(255, 255, 255, .18);
+}
+
+.temple-countdown-title {
+  margin: 0;
+  color: var(--cream);
+  font: 700 calc(var(--sw) * .038)/1.3 var(--font-tamil);
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+}
+
+.temple-timer {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(5px, 1.8vw, 10px);
+  width: 100%;
+}
+
+.temple-timer-tile {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 1 / 1.08;
+  padding: 5px;
+  overflow: hidden;
+  border: 1px solid var(--gold-line);
+  border-radius: 11px;
+  background: rgba(38, 19, 14, .78);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, .38);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.temple-timer-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--cream);
+}
+
+.temple-timer-number {
+  font: 500 clamp(20px, calc(var(--sw) * .068), 43px)/1 Georgia, serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+}
+
+.temple-timer-label {
+  margin-top: 8px;
+  color: #e3c58d;
+  font: 700 clamp(6px, calc(var(--sw) * .018), 9px)/1 Arial, sans-serif;
+  letter-spacing: .08em;
+  text-align: center;
+}
+
+.temple-timer-scratch {
+  position: absolute;
+  inset: 5px;
+  overflow: hidden;
+  border-radius: 6px;
+  cursor: crosshair;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.temple-timer-scratch:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: -2px;
+}
+
+.temple-timer-scratch canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.temple-timer-scratch.done {
+  display: none;
+}
+
+/* Calendar action below the timer. */
+.temple-calendar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 18px;
+  border: 1px solid #d8b878;
+  border-radius: 5px;
+  background: rgba(47, 20, 25, .9);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .32);
+  color: #f8e8c7;
+  font: 600 clamp(9px, calc(var(--sw) * .022), 12px)/1 Arial, sans-serif;
+  letter-spacing: .06em;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.temple-calendar:active {
+  transform: translateY(1px);
+}
+
+.countdown-swipe-hint {
+  position: absolute;
+  z-index: 3;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(-50%);
+}
+
+.countdown-swipe-hint:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+.scene.to-countdown .countdown-swipe-hint {
+  animation: countdownHintReveal .6s .8s ease-out forwards;
+}
+
+.countdown-double-arrow {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 18px;
+  color: var(--gold-bright);
+  animation: countdownArrowBob 1.4s ease-in-out infinite;
+}
+
+.countdown-double-arrow i {
+  position: absolute;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.countdown-double-arrow i:first-child {
+  top: 2px;
+}
+
+.countdown-double-arrow i:last-child {
+  top: 8px;
+}
+
+@keyframes countdownHintReveal {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes countdownArrowBob {
+
+  0%,
+  100% {
+    transform: translateY(2px);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (max-width: 390px) {
+  .temple-countdown {
+    gap: 12px;
+  }
+
+  .temple-timer {
+    gap: 5px;
+  }
+
+  .temple-timer-tile {
+    padding: 4px;
+  }
+
+  .temple-timer-scratch {
+    inset: 4px;
+  }
+}
+
+/* ---- 5. Gratitude screen ------------------------------------------------ */
+.scene.to-gratitude .gratitude-screen {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.gratitude-screen {
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.gratitude-screen::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(22, 12, 20, .58), rgba(31, 16, 20, .72) 48%, rgba(12, 8, 15, .78));
+  content: "";
+}
+
+.gratitude-content {
+  position: relative;
+  z-index: 2;
+  width: 84%;
+  color: var(--cream);
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .78);
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.scene.to-gratitude .gratitude-content {
+  animation: riseIn .9s .25s ease-out forwards;
+}
+
+@keyframes riseIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gratitude-ornament {
+  display: block;
+  margin-bottom: calc(var(--sw) * .03);
+  color: #f0d091;
+  font: 400 calc(var(--sw) * .09)/1 var(--font-serif);
+  letter-spacing: .12em;
+}
+
+.gratitude-signoff {
+  margin: 0;
+  color: var(--gold);
+  font: 400 clamp(11px, calc(var(--sw) * .032), 14px)/1.5 var(--font-tamil);
+}
+
+.gratitude-signoff {
+  margin-top: calc(var(--sw) * .05);
+}
+
+.gratitude-copy {
+  max-width: 34em;
+  margin: 0 auto;
+  color: #f7dfb4;
+  font: 400 clamp(11px, calc(var(--sw) * .035), 15px)/1.7 var(--font-tamil);
+}
+
+/* Petal shower: a full-screen canvas drawn over the screen, plus one button. */
+.petal-canvas {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gratitude-petals {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: calc(var(--sw) * .04);
+}
+
+.petal-button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  border: 1px solid #e8c373;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #94604a 0, #5a2b33 50%, #25151d 100%);
+  box-shadow: 0 0 0 5px rgba(232, 195, 115, .12), inset 0 0 0 2px rgba(255, 235, 190, .14),
+    inset 0 3px 9px rgba(255, 232, 179, .1), 0 8px 18px rgba(0, 0, 0, .42);
+  color: var(--cream);
+  cursor: pointer;
+  transition: box-shadow .2s ease, transform .2s ease, filter .2s ease;
+}
+
+.petal-button:hover {
+  box-shadow: 0 0 0 5px rgba(232, 195, 115, .22), inset 0 0 0 2px rgba(255, 235, 190, .2),
+    0 10px 22px rgba(0, 0, 0, .45), 0 0 18px rgba(255, 190, 90, .3);
+  filter: brightness(1.1);
+}
+
+.petal-button:active {
+  transform: scale(.95);
+}
+
+.petal-button:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 6px;
+}
+
+.petal-icon {
+  width: 30px;
+  height: 30px;
+  fill: rgba(255, 183, 3, .18);
+  stroke: var(--gold-bright);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 5px rgba(255, 190, 80, .5));
+}
+
+.petal-button-text {
+  max-width: 76px;
+  font: 500 13px/1.2 var(--font-tamil);
+  text-align: center;
+}
+
+.gratitude-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin-top: calc(var(--sw) * .05);
+  padding: 0 14px;
+  border: 1px solid rgba(241, 212, 155, .72);
+  border-radius: 999px;
+  background: rgba(31, 18, 24, .45);
+  color: var(--cream);
+  font: 500 clamp(9px, calc(var(--sw) * .025), 12px)/1.2 var(--font-tamil);
+  cursor: pointer;
+}
+
+.gratitude-back:hover {
+  background: rgba(89, 55, 39, .78);
+}
+
+.gratitude-back:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+}
+
+/* ---- Dev helper: open index.html#tune to outline every flame ------------ */
+.tune .hero {
+  display: none;
+}
+
+.tune .flame {
+  opacity: 1 !important;
+  animation: none !important;
+  transform: translate(-50%, -100%) scale(var(--s)) !important;
+  outline: 1px solid red;
+}
+
+.tune .opened {
+  opacity: 1 !important;
+  animation: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+.tune .closed,
+.tune .vignette,
+.tune .ripple {
+  display: none;
+}
+
+/* ---- Reduced motion ----------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+
+  .scene-image,
+  .hint {
+    transition-duration: .01ms;
+  }
+
+  .scene.is-lit .stage,
+  .is-lit .sway,
+  .is-lit .core,
+  .is-lit .halo,
+  .is-lit .warm,
+  .is-lit .vignette,
+  .is-lit .flash,
+  .ripple i {
+    animation: none;
+  }
+
+  .is-lit .flame {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(var(--s));
+  }
+
+  .is-lit .halo {
+    opacity: .7;
+  }
+
+  .is-lit .warm {
+    opacity: .5;
+  }
+
+  .is-lit .vignette {
+    opacity: .4;
+  }
+
+  .ripple {
+    display: none;
+  }
+
+  .stage,
+  .hero,
+  .hero-img,
+  .temple-screen,
+  .countdown-screen,
+  .gratitude-screen,
+  .screen-bg,
+  .scene.to-temple .hero {
+    transition-duration: .01ms;
+    transition-delay: 0s !important;
+  }
+
+  .hero-img,
+  .screen-bg {
+    transform: none;
+  }
+
+  .hero-petals {
+    display: none;
+  }
+
+  .scene.to-hero .hero-arch,
+  .scene.to-hero .hero-img,
+  .scene.to-hero .couple-name-art,
+  .scene.to-hero .couple-portrait,
+  .scene.to-hero .hero-couple-glow {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .scene.to-hero .hero-couple-wrap {
+    animation: none;
+    transform: translateX(-50%);
+  }
+
+  .scene.to-hero .hero-swipe-hint {
+    animation: none;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%);
+  }
+
+  .scene.to-temple .temple-logo {
+    animation: none;
+    opacity: 1;
+  }
+
+  .scene.to-temple .temple-poem-line {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .scene.temple-ready .temple-swipe-hint {
+    animation: none;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%);
+  }
+
+  .scene.temple-ready .temple-poem,
+  .scene.to-gratitude .gratitude-content {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .scene.to-countdown .temple-countdown {
+    animation: none;
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+
+  .scene.to-countdown .countdown-swipe-hint {
+    animation: none;
+    opacity: 1;
+  }
+
+  .countdown-double-arrow {
+    animation: none;
+  }
+
+}
