@@ -781,9 +781,12 @@ body {
   z-index: 7;
   bottom: max(12px, env(safe-area-inset-bottom));
   left: 50%;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   place-items: center;
-  width: 44px;
+  gap: 4px;
+  width: auto;
+  min-width: 44px;
   height: 44px;
   padding: 0;
   border: 0;
@@ -1079,10 +1082,13 @@ body {
   z-index: 2;
   bottom: max(12px, env(safe-area-inset-bottom));
   left: 50%;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   place-items: center;
-  width: 16px;
-  height: 18px;
+  gap: 4px;
+  width: auto;
+  min-width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1170,11 +1176,75 @@ body {
   text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
 }
 
+.scratch-instruction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: -4px 0;
+  color: #fff8e8;
+  font: 700 clamp(8px, calc(var(--sw) * .018), 10px)/1.2 Arial, sans-serif;
+  letter-spacing: .12em;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(18, 8, 24, .95);
+  transition: opacity .4s ease, transform .4s ease;
+}
+
+.scratch-instruction [lang="ta"] {
+  padding-left: 7px;
+  border-left: 1px solid rgba(255, 248, 232, .55);
+  font: 400 clamp(9px, calc(var(--sw) * .021), 11px)/1.2 var(--font-tamil);
+  letter-spacing: 0;
+}
+
+.scratch-instruction.complete {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 .temple-timer {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(5px, 1.8vw, 10px);
   width: 100%;
+}
+
+.wedding-date-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin: -4px 0;
+  color: #fff8e8;
+  text-align: center;
+  text-shadow: 0 1px 5px rgba(18, 8, 24, .9);
+}
+
+.wedding-date-reveal:not([hidden]) {
+  animation: weddingDateReveal .7s ease-out both;
+}
+
+.wedding-date-reveal span {
+  color: #e3c58d;
+  font: 700 8px/1.2 Arial, sans-serif;
+  letter-spacing: .18em;
+}
+
+.wedding-date-reveal strong {
+  font: 600 clamp(14px, calc(var(--sw) * .036), 18px)/1.2 var(--font-serif);
+  letter-spacing: .08em;
+}
+
+@keyframes weddingDateReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .temple-timer-tile {
@@ -1267,9 +1337,12 @@ body {
   z-index: 3;
   bottom: max(12px, env(safe-area-inset-bottom));
   left: 50%;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   place-items: center;
-  width: 44px;
+  gap: 4px;
+  width: auto;
+  min-width: 44px;
   height: 44px;
   padding: 0;
   border: 0;
@@ -1284,6 +1357,16 @@ body {
 .countdown-swipe-hint:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 2px;
+}
+
+.swipe-hint-label {
+  color: #fff8e8;
+  font: 600 9px/1 system-ui, sans-serif;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  text-shadow:
+    0 1px 3px rgba(37, 8, 24, .95),
+    0 0 4px rgba(37, 8, 24, .75);
 }
 
 .scene.to-countdown .countdown-swipe-hint {

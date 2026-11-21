@@ -198,6 +198,12 @@
     function reveal() {
       finished = true;
       surface.classList.add('done');
+      $('weddingDateReveal').hidden = false;
+      const instruction = $('scratchInstruction');
+      if (instruction &&
+          [...document.querySelectorAll('.temple-timer-scratch')].every((tile) => tile.classList.contains('done'))) {
+        instruction.classList.add('complete');
+      }
     }
 
     function clearedFraction() {
@@ -241,6 +247,7 @@
       }
       pointer.last = point;
       touched = true;
+      $('weddingDateReveal').hidden = false;
       checkProgress();
     }
 
@@ -409,6 +416,7 @@
     const heroSwipeHint = $('heroSwipeHint');
     const templeScreen = $('templeScreen');
     const countdownScreen = $('countdownScreen');
+    const countdownSwipeHint = $('countdownSwipeHint');
     const swipeHint = $('templeSwipeHint');
     let templeReady = false;
     let templeStarted = false;
@@ -490,11 +498,26 @@
     let swipeStartY = null;
     const isInteractive = (target) =>
       target instanceof Element && target.closest('a, button, [role="button"]');
+    const isScratchSurface = (target) =>
+      target instanceof Element && target.closest('.temple-timer-scratch');
+    const canStartSwipe = (target) =>
+      !isInteractive(target) ||
+      (target instanceof Element &&
+        target.closest('.hero-swipe-hint, .temple-swipe-hint, .countdown-swipe-hint')) ||
+      isScratchSurface(target);
 
     let heroSwipeStartY = null;
+    let heroTouchStartY = null;
+
+    function heroCanSwipe() {
+      return scene.classList.contains('to-hero') && !scene.classList.contains('to-temple');
+    }
+
     heroScreen.addEventListener('pointerdown', (event) => {
-      heroSwipeStartY = !isInteractive(event.target) ? event.clientY : null;
-      if (heroSwipeStartY !== null) heroScreen.setPointerCapture(event.pointerId);
+      heroSwipeStartY = heroCanSwipe() && canStartSwipe(event.target) ? event.clientY : null;
+      if (heroSwipeStartY !== null) {
+        try { heroScreen.setPointerCapture(event.pointerId); } catch { /* pointer capture is optional */ }
+      }
     });
     heroScreen.addEventListener('pointermove', (event) => {
       if (heroSwipeStartY !== null &&
@@ -503,12 +526,39 @@
         showTemple();
       }
     });
-    for (const type of ['pointerup', 'pointercancel']) {
-      heroScreen.addEventListener(type, () => { heroSwipeStartY = null; });
-    }
+    heroScreen.addEventListener('pointerup', (event) => {
+      if (heroSwipeStartY !== null &&
+          event.clientY - heroSwipeStartY < -CONFIG.swipeThresholdPx) showTemple();
+      heroSwipeStartY = null;
+    });
+    heroScreen.addEventListener('pointercancel', () => { heroSwipeStartY = null; });
+
+    heroScreen.addEventListener('touchstart', (event) => {
+      heroTouchStartY = heroCanSwipe() && canStartSwipe(event.target)
+        ? event.changedTouches[0].clientY
+        : null;
+    }, { passive: true });
+    heroScreen.addEventListener('touchmove', (event) => {
+      if (heroTouchStartY !== null &&
+          event.changedTouches[0].clientY - heroTouchStartY < -CONFIG.swipeThresholdPx) {
+        heroTouchStartY = null;
+        showTemple();
+      }
+    }, { passive: true });
+    heroScreen.addEventListener('touchend', (event) => {
+      if (heroTouchStartY !== null &&
+          event.changedTouches[0].clientY - heroTouchStartY < -CONFIG.swipeThresholdPx) showTemple();
+      heroTouchStartY = null;
+    }, { passive: true });
+    heroScreen.addEventListener('wheel', (event) => {
+      if (heroCanSwipe() && event.deltaY > CONFIG.wheelThreshold) showTemple();
+    }, { passive: true });
 
     templeScreen.addEventListener('pointerdown', (event) => {
-      swipeStartY = templeReady && !isInteractive(event.target) ? event.clientY : null;
+      swipeStartY = templeReady && canStartSwipe(event.target) ? event.clientY : null;
+      if (swipeStartY !== null) {
+        try { templeScreen.setPointerCapture(event.pointerId); } catch { /* pointer capture is optional */ }
+      }
     });
     templeScreen.addEventListener('pointermove', (event) => {
       if (swipeStartY !== null && event.clientY - swipeStartY < -CONFIG.swipeThresholdPx) {
@@ -516,35 +566,98 @@
         showCountdown();
       }
     });
-    for (const type of ['pointerup', 'pointercancel']) {
-      templeScreen.addEventListener(type, () => { swipeStartY = null; });
-    }
+    templeScreen.addEventListener('pointerup', (event) => {
+      if (swipeStartY !== null &&
+          event.clientY - swipeStartY < -CONFIG.swipeThresholdPx) showCountdown();
+      swipeStartY = null;
+    });
+    templeScreen.addEventListener('pointercancel', () => { swipeStartY = null; });
     templeScreen.addEventListener('wheel', (event) => {
       if (event.deltaY > CONFIG.wheelThreshold) showCountdown();
     }, { passive: true });
 
     let countdownSwipeStartY = null;
+    let countdownTouchStartY = null;
+
+    function countdownCanSwipe() {
+      return scene.classList.contains('to-countdown') && !scene.classList.contains('to-gratitude');
+    }
+
+    function countdownSwipeThreshold(target) {
+      return target instanceof Element && target.closest('.countdown-swipe-hint')
+        ? 20
+        : CONFIG.swipeThresholdPx;
+    }
+
+    let countdownHintSwipeStartY = null;
+    countdownSwipeHint.addEventListener('pointerdown', (event) => {
+      countdownHintSwipeStartY = countdownCanSwipe() ? event.clientY : null;
+      if (countdownHintSwipeStartY !== null) {
+        try { countdownSwipeHint.setPointerCapture(event.pointerId); } catch { /* pointer capture is optional */ }
+      }
+    });
+    countdownSwipeHint.addEventListener('pointermove', (event) => {
+      if (countdownHintSwipeStartY !== null &&
+          event.clientY - countdownHintSwipeStartY < -20) {
+        countdownHintSwipeStartY = null;
+        showGratitude();
+      }
+    });
+    countdownSwipeHint.addEventListener('pointerup', (event) => {
+      if (countdownHintSwipeStartY !== null &&
+          event.clientY - countdownHintSwipeStartY < -20) showGratitude();
+      countdownHintSwipeStartY = null;
+    });
+    countdownSwipeHint.addEventListener('pointercancel', () => { countdownHintSwipeStartY = null; });
+
     countdownScreen.addEventListener('pointerdown', (event) => {
-      countdownSwipeStartY = !isInteractive(event.target) ? event.clientY : null;
-      if (countdownSwipeStartY !== null) countdownScreen.setPointerCapture(event.pointerId);
+      countdownSwipeStartY = countdownCanSwipe() && canStartSwipe(event.target) &&
+        !countdownSwipeHint.contains(event.target)
+        ? { y: event.clientY, threshold: countdownSwipeThreshold(event.target) }
+        : null;
+      if (countdownSwipeStartY !== null && !isScratchSurface(event.target)) {
+        try { countdownScreen.setPointerCapture(event.pointerId); } catch { /* pointer capture is optional */ }
+      }
     });
     countdownScreen.addEventListener('pointermove', (event) => {
       if (countdownSwipeStartY !== null &&
-          event.clientY - countdownSwipeStartY < -CONFIG.swipeThresholdPx) {
+          event.clientY - countdownSwipeStartY.y < -countdownSwipeStartY.threshold) {
         countdownSwipeStartY = null;
         showGratitude();
       }
     });
-    for (const type of ['pointerup', 'pointercancel']) {
-      countdownScreen.addEventListener(type, () => { countdownSwipeStartY = null; });
-    }
+    countdownScreen.addEventListener('pointerup', (event) => {
+      if (countdownSwipeStartY !== null &&
+          event.clientY - countdownSwipeStartY.y < -countdownSwipeStartY.threshold) showGratitude();
+      countdownSwipeStartY = null;
+    });
+    countdownScreen.addEventListener('pointercancel', () => { countdownSwipeStartY = null; });
+
+    countdownScreen.addEventListener('touchstart', (event) => {
+      countdownTouchStartY = countdownCanSwipe() && canStartSwipe(event.target)
+        ? { y: event.changedTouches[0].clientY, threshold: countdownSwipeThreshold(event.target) }
+        : null;
+    }, { passive: true });
+    countdownScreen.addEventListener('touchmove', (event) => {
+      if (countdownTouchStartY !== null &&
+          event.changedTouches[0].clientY - countdownTouchStartY.y < -countdownTouchStartY.threshold) {
+        countdownTouchStartY = null;
+        showGratitude();
+      }
+    }, { passive: true });
+    countdownScreen.addEventListener('touchend', (event) => {
+      if (countdownTouchStartY !== null &&
+          event.changedTouches[0].clientY - countdownTouchStartY.y < -countdownTouchStartY.threshold) showGratitude();
+      countdownTouchStartY = null;
+    }, { passive: true });
+    countdownScreen.addEventListener('touchcancel', () => { countdownTouchStartY = null; }, { passive: true });
     countdownScreen.addEventListener('wheel', (event) => {
-      if (event.deltaY > CONFIG.wheelThreshold && !isInteractive(event.target)) showGratitude();
+      if (countdownCanSwipe() && event.deltaY > CONFIG.wheelThreshold && !isInteractive(event.target)) showGratitude();
     }, { passive: true });
 
     heroSwipeHint.addEventListener('click', showTemple);
     swipeHint.addEventListener('click', showCountdown);
-    $('countdownSwipeHint').addEventListener('click', showGratitude);
+    countdownSwipeHint.addEventListener('click', showGratitude);
     $('countdownBackButton').addEventListener('click', backToCountdown);
     $('lampTarget').addEventListener('click', lightLamp, { once: true });
 
