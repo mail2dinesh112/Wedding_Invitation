@@ -7,13 +7,13 @@
 
 /* ---- Tokens ------------------------------------------------------------- */
 :root {
+  color-scheme: light;
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
   --night: #17132c;
   --cream: #fff1d2;
   --gold: #f1d49b;
   --gold-bright: #ffe09a;
   --gold-line: rgba(224, 190, 124, .9);
-  --plum: #57134b;
-  --panel: rgba(31, 18, 24, .76);
 
   --font-tamil: 'Kavivanar', cursive;
   --font-serif: 'Cormorant Garamond', Georgia, serif;
@@ -42,6 +42,17 @@ body {
 body {
   overflow: hidden;
   background: var(--night);
+  font: 14px -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* One focus ring for every control; individual components only override when they must. */
+:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
 }
 
 /* Light spreads outward from the lamp (needs @property; falls back to a crossfade). */
@@ -107,6 +118,37 @@ body {
   object-position: center;
   transform: scale(1.025);
   transition: transform 12s var(--ease-slow);
+}
+
+/* Pointer-based swipe detection needs touch-action:none on the touched element itself —
+   a value on the ancestor alone lets the browser claim the gesture (pointercancel). */
+.swipe-screen,
+.swipe-screen * {
+  touch-action: none;
+}
+
+/* Show / hide: a screen fades in when its state class is set, and fades out when the next
+   screen takes over. Hiding is listed after showing so it wins at equal specificity. */
+.scene.to-temple .temple-screen,
+.scene.to-countdown .countdown-screen,
+.scene.to-gratitude .gratitude-screen {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* The invitation card keeps its own slow, delayed fade-in (see .hero below). */
+.scene.to-hero .hero {
+  opacity: 1;
+  visibility: visible;
+}
+
+.scene.to-temple .hero,
+.scene.to-countdown .temple-screen,
+.scene.to-countdown.to-gratitude .countdown-screen {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
 }
 
 /* ---- 1. Lamp stage ------------------------------------------------------ */
@@ -292,11 +334,6 @@ body {
   background: transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-}
-
-.lamp-target:focus-visible {
-  outline: 2px solid #ffe6a3;
-  outline-offset: 3px;
 }
 
 .is-lit .lamp-target {
@@ -593,36 +630,19 @@ body {
 }
 
 /* ---- 2. Invitation card ------------------------------------------------- */
-.hero,
-.hero * {
-  touch-action: none;
-}
-
 .hero {
   transition: opacity 2s ease 1.3s, visibility 0s linear 1.3s;
 }
 
-.scene.to-hero .hero {
-  opacity: 1;
-  visibility: visible;
-}
-
-.scene.to-temple .hero {
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
+.hero-img,
+.hero-arch {
+  z-index: 1;
+  transform: scale(1.06);
 }
 
 .hero-img {
-  position: absolute;
   z-index: 2;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
   transform: scale(1.03);
-  will-change: opacity, transform;
 }
 
 .hero-arch {
@@ -637,35 +657,29 @@ body {
   will-change: opacity, transform;
 }
 
+/* Arch first, then the card, names and couple settle in together. */
 .scene.to-hero .hero-arch {
-  animation: invitationArchIn 2s .3s cubic-bezier(.22, .61, .36, 1) forwards;
+  animation: settleIn 2s .3s cubic-bezier(.22, .61, .36, 1) forwards;
 }
 
-.scene.to-hero .hero-img {
-  animation: invitationBackgroundIn 2.6s 2.6s ease-in-out forwards;
+.scene.to-hero :is(.hero-img, .couple-name-art, .couple-portrait) {
+  animation: settleIn 2.6s 2.6s ease-in-out forwards;
 }
 
-@keyframes invitationArchIn {
+@keyframes settleIn {
   to {
     opacity: 1;
     transform: scale(1);
   }
 }
 
-@keyframes invitationBackgroundIn {
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes invitationGlowIn {
+@keyframes glowIn {
   to {
     opacity: .8;
   }
 }
 
-@keyframes invitationGlowPulse {
+@keyframes glowPulse {
 
   0%,
   100% {
@@ -693,14 +707,14 @@ body {
   border-radius: 60% 0 60% 0;
   background: radial-gradient(circle at 30% 30%, #fff, #f6e7c1);
   opacity: 0;
-  animation: invitationPetalFall linear infinite paused;
+  animation: petalFall linear infinite paused;
 }
 
 .scene.to-hero .hero-petal {
   animation-play-state: running;
 }
 
-@keyframes invitationPetalFall {
+@keyframes petalFall {
   0% {
     transform: translate3d(0, 0, 0) rotate(0);
     opacity: 0;
@@ -741,23 +755,14 @@ body {
   position: absolute;
   z-index: 3;
   top: 31%;
-  left: 50%;
+  right: 0;
+  left: 0;
   width: 58%;
   height: auto;
+  margin-inline: auto;
   opacity: 0;
-  transform: translateX(-50%) scale(1.03);
+  transform: scale(1.03);
   will-change: opacity, transform;
-}
-
-.scene.to-hero .couple-name-art {
-  animation: invitationNameIn 2.6s 2.6s ease-in-out forwards;
-}
-
-@keyframes invitationNameIn {
-  to {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-  }
 }
 
 .welcome-message {
@@ -774,38 +779,6 @@ body {
   bottom: -3%;
   width: 54%;
   transform: translateX(-50%);
-}
-
-.hero-swipe-hint {
-  position: absolute;
-  z-index: 7;
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: 50%;
-  display: flex;
-  flex-direction: column;
-  place-items: center;
-  gap: 4px;
-  width: auto;
-  min-width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(-50%, 8px);
-}
-
-.scene.to-hero .hero-swipe-hint {
-  animation: hintReveal .7s 5.2s ease-out forwards;
-}
-
-.hero-swipe-hint:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 2px;
 }
 
 .couple-portrait {
@@ -831,47 +804,14 @@ body {
   transform: translate(-50%, -50%);
 }
 
-.scene.to-hero .couple-portrait {
-  animation: invitationCoupleReveal 2.6s 2.6s ease-in-out forwards;
-}
-
 .scene.to-hero .hero-couple-glow {
-  animation: invitationGlowIn 3s ease-out 5.2s forwards,
-    invitationGlowPulse 5s ease-in-out 8.2s infinite;
-}
-
-@keyframes invitationCoupleReveal {
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  animation: glowIn 3s ease-out 5.2s forwards,
+    glowPulse 5s ease-in-out 8.2s infinite;
 }
 
 /* ---- 3. Temple screen --------------------------------------------------- */
 /* Pointer-based swipe detection needs touch-action:none on the touched element itself —
    a value on the ancestor alone lets the browser claim the gesture (pointercancel). */
-.temple-screen,
-.temple-screen * {
-  touch-action: none;
-}
-
-.countdown-screen,
-.countdown-screen * {
-  touch-action: none;
-}
-
-.scene.to-temple .temple-screen {
-  opacity: 1;
-  visibility: visible;
-  transition-delay: 0s;
-}
-
-.scene.to-countdown .temple-screen {
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
-}
-
 .scene.to-temple .temple-background,
 .scene.to-countdown .countdown-background,
 .scene.to-gratitude .gratitude-background {
@@ -1037,11 +977,6 @@ body {
   transform: translate(-50%, 0);
 }
 
-.temple-directions:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 3px;
-}
-
 .temple-directions-icon {
   flex: 0 0 auto;
   width: 23px;
@@ -1077,36 +1012,6 @@ body {
   transition: transform .25s ease;
 }
 
-.temple-swipe-hint {
-  position: absolute;
-  z-index: 2;
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: 50%;
-  display: flex;
-  flex-direction: column;
-  place-items: center;
-  gap: 4px;
-  width: auto;
-  min-width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(-50%, 8px);
-  cursor: pointer;
-}
-
-.scene.temple-ready .temple-swipe-hint {
-  animation: hintReveal .7s ease-out forwards;
-}
-
-.temple-swipe-hint:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-
 @keyframes hintReveal {
   to {
     opacity: 1;
@@ -1116,18 +1021,6 @@ body {
 }
 
 /* ---- 4. Countdown screen ------------------------------------------------ */
-.scene.to-countdown .countdown-screen {
-  opacity: 1;
-  visibility: visible;
-  transition-delay: 0s;
-}
-
-.scene.to-countdown.to-gratitude .countdown-screen {
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 1.5s ease, visibility 0s linear 1.5s;
-}
-
 .temple-countdown {
   position: absolute;
   z-index: 2;
@@ -1176,32 +1069,6 @@ body {
   text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
 }
 
-.scratch-instruction {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin: -4px 0;
-  color: #fff8e8;
-  font: 700 clamp(8px, calc(var(--sw) * .018), 10px)/1.2 Arial, sans-serif;
-  letter-spacing: .12em;
-  text-align: center;
-  text-shadow: 0 1px 4px rgba(18, 8, 24, .95);
-  transition: opacity .4s ease, transform .4s ease;
-}
-
-.scratch-instruction [lang="ta"] {
-  padding-left: 7px;
-  border-left: 1px solid rgba(255, 248, 232, .55);
-  font: 400 clamp(9px, calc(var(--sw) * .021), 11px)/1.2 var(--font-tamil);
-  letter-spacing: 0;
-}
-
-.scratch-instruction.complete {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
 .temple-timer {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1220,10 +1087,6 @@ body {
   text-shadow: 0 1px 5px rgba(18, 8, 24, .9);
 }
 
-.wedding-date-reveal:not([hidden]) {
-  animation: weddingDateReveal .7s ease-out both;
-}
-
 .wedding-date-reveal span {
   color: #e3c58d;
   font: 700 8px/1.2 Arial, sans-serif;
@@ -1233,18 +1096,6 @@ body {
 .wedding-date-reveal strong {
   font: 600 clamp(14px, calc(var(--sw) * .036), 18px)/1.2 var(--font-serif);
   letter-spacing: .08em;
-}
-
-@keyframes weddingDateReveal {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .temple-timer-tile {
@@ -1285,31 +1136,6 @@ body {
   text-align: center;
 }
 
-.temple-timer-scratch {
-  position: absolute;
-  inset: 5px;
-  overflow: hidden;
-  border-radius: 6px;
-  cursor: crosshair;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.temple-timer-scratch:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: -2px;
-}
-
-.temple-timer-scratch canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.temple-timer-scratch.done {
-  display: none;
-}
-
 /* Calendar action below the timer. */
 .temple-calendar {
   display: inline-flex;
@@ -1332,16 +1158,15 @@ body {
   transform: translateY(1px);
 }
 
-.countdown-swipe-hint {
+.swipe-hint {
   position: absolute;
-  z-index: 3;
+  z-index: 7;
   bottom: max(12px, env(safe-area-inset-bottom));
   left: 50%;
   display: flex;
   flex-direction: column;
   place-items: center;
   gap: 4px;
-  width: auto;
   min-width: 44px;
   height: 44px;
   padding: 0;
@@ -1351,12 +1176,23 @@ body {
   color: inherit;
   cursor: pointer;
   opacity: 0;
-  transform: translateX(-50%);
+  visibility: hidden;
+  transform: translate(-50%, 8px);
 }
 
-.countdown-swipe-hint:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 2px;
+/* Each hint appears once its screen is ready; the invitation card waits for its animation. */
+.scene.to-hero .hero .swipe-hint,
+.scene.temple-ready .temple-screen .swipe-hint,
+.scene.to-countdown .countdown-screen .swipe-hint {
+  animation: hintReveal .7s var(--hint-delay, 0s) ease-out forwards;
+}
+
+.hero .swipe-hint {
+  --hint-delay: 5.2s;
+}
+
+.countdown-screen .swipe-hint {
+  --hint-delay: .8s;
 }
 
 .swipe-hint-label {
@@ -1369,25 +1205,21 @@ body {
     0 0 4px rgba(37, 8, 24, .75);
 }
 
-.scene.to-countdown .countdown-swipe-hint {
-  animation: countdownHintReveal .6s .8s ease-out forwards;
-}
-
-.countdown-double-arrow {
+.swipe-arrow {
   position: relative;
   display: block;
   width: 16px;
   height: 18px;
   color: var(--gold-bright);
-  animation: countdownArrowBob 1.4s ease-in-out infinite;
+  animation: arrowBob 1.4s ease-in-out infinite;
 }
 
-.hero-swipe-hint .countdown-double-arrow {
+.hero .swipe-arrow {
   color: #fff8e8;
   filter: drop-shadow(0 1px 2px rgba(37, 8, 24, .95)) drop-shadow(0 0 4px rgba(37, 8, 24, .75));
 }
 
-.countdown-double-arrow i {
+.swipe-arrow i {
   position: absolute;
   left: 3px;
   width: 10px;
@@ -1397,21 +1229,15 @@ body {
   transform: rotate(45deg);
 }
 
-.countdown-double-arrow i:first-child {
+.swipe-arrow i:first-child {
   top: 2px;
 }
 
-.countdown-double-arrow i:last-child {
+.swipe-arrow i:last-child {
   top: 8px;
 }
 
-@keyframes countdownHintReveal {
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes countdownArrowBob {
+@keyframes arrowBob {
 
   0%,
   100% {
@@ -1434,10 +1260,6 @@ body {
 
   .temple-timer-tile {
     padding: 4px;
-  }
-
-  .temple-timer-scratch {
-    inset: 4px;
   }
 }
 
@@ -1493,13 +1315,9 @@ body {
 }
 
 .gratitude-signoff {
-  margin: 0;
+  margin: calc(var(--sw) * .05) 0 0;
   color: var(--gold);
   font: 400 clamp(11px, calc(var(--sw) * .032), 14px)/1.5 var(--font-tamil);
-}
-
-.gratitude-signoff {
-  margin-top: calc(var(--sw) * .05);
 }
 
 .gratitude-copy {
@@ -1556,7 +1374,6 @@ body {
 }
 
 .petal-button:focus-visible {
-  outline: 2px solid var(--cream);
   outline-offset: 6px;
 }
 
@@ -1596,158 +1413,22 @@ body {
   background: rgba(89, 55, 39, .78);
 }
 
-.gratitude-back:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 3px;
-}
-
-/* ---- Dev helper: open index.html#tune to outline every flame ------------ */
-.tune .hero {
-  display: none;
-}
-
-.tune .flame {
-  opacity: 1 !important;
-  animation: none !important;
-  transform: translate(-50%, -100%) scale(var(--s)) !important;
-  outline: 1px solid red;
-}
-
-.tune .opened {
-  opacity: 1 !important;
-  animation: none !important;
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
-}
-
-.tune .closed,
-.tune .vignette,
-.tune .ripple {
-  display: none;
-}
-
 /* ---- Reduced motion ----------------------------------------------------- */
+/* Every animation uses `forwards`, so finishing instantly lands on its end state; the
+   screens swap without movement, and the looping effects (flicker, sway, bob) run once. */
 @media (prefers-reduced-motion: reduce) {
 
-  .scene-image,
-  .hint {
-    transition-duration: .01ms;
-  }
-
-  .scene.is-lit .stage,
-  .is-lit .sway,
-  .is-lit .core,
-  .is-lit .halo,
-  .is-lit .warm,
-  .is-lit .vignette,
-  .is-lit .flash,
-  .ripple i {
-    animation: none;
-  }
-
-  .is-lit .flame {
-    animation: none;
-    opacity: 1;
-    transform: translate(-50%, -100%) scale(var(--s));
-  }
-
-  .is-lit .halo {
-    opacity: .7;
-  }
-
-  .is-lit .warm {
-    opacity: .5;
-  }
-
-  .is-lit .vignette {
-    opacity: .4;
-  }
-
-  .ripple {
-    display: none;
-  }
-
-  .stage,
-  .hero,
-  .hero-img,
-  .temple-screen,
-  .countdown-screen,
-  .gratitude-screen,
-  .screen-bg,
-  .scene.to-temple .hero {
-    transition-duration: .01ms;
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
     transition-delay: 0s !important;
-  }
-
-  .hero-img,
-  .screen-bg {
-    transform: none;
   }
 
   .hero-petals {
     display: none;
   }
-
-  .scene.to-hero .hero-arch,
-  .scene.to-hero .hero-img,
-  .scene.to-hero .couple-name-art,
-  .scene.to-hero .couple-portrait,
-  .scene.to-hero .hero-couple-glow {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
-  .scene.to-hero .hero-couple-wrap {
-    animation: none;
-    transform: translateX(-50%);
-  }
-
-  .scene.to-hero .hero-swipe-hint {
-    animation: none;
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%);
-  }
-
-  .scene.to-temple .temple-logo {
-    animation: none;
-    opacity: 1;
-  }
-
-  .scene.to-temple .temple-poem-line {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
-  .scene.temple-ready .temple-swipe-hint {
-    animation: none;
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%);
-  }
-
-  .scene.temple-ready .temple-poem,
-  .scene.to-gratitude .gratitude-content {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
-  .scene.to-countdown .temple-countdown {
-    animation: none;
-    opacity: 1;
-    transform: translateY(-50%);
-  }
-
-  .scene.to-countdown .countdown-swipe-hint {
-    animation: none;
-    opacity: 1;
-  }
-
-  .countdown-double-arrow {
-    animation: none;
-  }
-
 }

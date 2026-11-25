@@ -5,43 +5,18 @@
   <meta charset="UTF-8">
   <meta http-equiv="content-language" content="ta">
   <meta name="google" content="notranslate">
-  <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <style>
-    :root {
-      color-scheme: light;
-      box-sizing: border-box;
-      padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 0px)
-    }
-
-    html {
-      scroll-padding-top: env(safe-area-inset-top, 0px)
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font: 14px -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #fff;
-      color: #000
-    }
-
-    img {
-      max-width: 100%
-    }
-
-    [hidden]:not([hidden=until-found i]) {
-      display: none !important
-    }
-  </style>
-</head>
-
-<body>
-  <title>Dineshkumar &amp; Suthesi Wedding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#17132c">
+  <title>Dineshkumar &amp; Suthesi Wedding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Kavivanar&display=swap">
   <link rel="stylesheet" href="./css/styles.css">
+  <script src="./js/main.js" defer></script>
+</head>
+
+<body>
 
   <main class="scene" id="scene" aria-label="குத்துவிளக்கைத் தொட்டு ஏற்றவும்">
     <audio id="bgm" src="./assets/bgm.mp3" preload="auto" loop></audio>
@@ -78,7 +53,7 @@
     </div>
 
     <!-- 2 · Invitation card -->
-    <section class="hero" id="hero" aria-label="Dineshkumar and Suthesi wedding">
+    <section class="hero swipe-screen" id="hero" aria-label="Dineshkumar and Suthesi wedding">
       <img class="hero-arch" src="./assets/invitation-arch.png" alt="" aria-hidden="true" decoding="async">
       <img class="hero-img" src="./assets/invitation-background.png" alt="Wedding invitation background"
         decoding="async">
@@ -92,15 +67,15 @@
         <img class="couple-portrait" src="./assets/invitation-couple.png" alt="Dineshkumar and Suthesi"
           decoding="async">
       </div>
-      <button class="hero-swipe-hint" id="heroSwipeHint" type="button"
+      <button class="swipe-hint" type="button"
         aria-label="Swipe up or select to view the temple">
-        <span class="countdown-double-arrow" aria-hidden="true"><i></i><i></i></span>
+        <span class="swipe-arrow" aria-hidden="true"><i></i><i></i></span>
         <span class="swipe-hint-label">SWIPE UP</span>
       </button>
     </section>
 
     <!-- 3 · Temple -->
-    <section class="temple-screen" id="templeScreen" aria-label="குமாரவயலூர் அருள்மிகு திருக்கோயில்">
+    <section class="temple-screen swipe-screen" id="templeScreen" aria-label="குமாரவயலூர் அருள்மிகு திருக்கோயில்">
       <img class="screen-bg temple-background" src="./assets/temple-background.webp" alt="" decoding="async">
       <img class="temple-logo" src="./assets/temple-logo.webp" alt="குமாரவயலூர் அருள்மிகு திருக்கோயில்"
         decoding="async">
@@ -131,58 +106,42 @@
         </span>
         <span class="temple-directions-arrow" aria-hidden="true">↗</span>
       </a>
-      <button class="temple-swipe-hint" id="templeSwipeHint" type="button"
+      <button class="swipe-hint" type="button"
         aria-label="Swipe up or select to view the wedding countdown">
-        <span class="countdown-double-arrow" aria-hidden="true"><i></i><i></i></span>
+        <span class="swipe-arrow" aria-hidden="true"><i></i><i></i></span>
         <span class="swipe-hint-label">SWIPE UP</span>
       </button>
     </section>
 
     <!-- 4 · Countdown -->
-    <section class="countdown-screen" id="countdownScreen" aria-label="Wedding countdown">
+    <section class="countdown-screen swipe-screen" id="countdownScreen" aria-label="Wedding countdown">
       <img class="screen-bg countdown-background" src="./assets/countdown-background.webp" alt="" decoding="async">
-      <div class="temple-countdown" id="templeCountdown">
+      <div class="temple-countdown">
         <blockquote class="countdown-verse" lang="ta">
           <p class="countdown-verse-line" style="--i:0"><span class="glass-text">அன்பும் அறனும் உடைத்தாயின்
               இல்வாழ்க்கை</span></p>
           <p class="countdown-verse-line" style="--i:1"><span class="glass-text">பண்பும் பயனும் அது.</span></p>
         </blockquote>
         <h2 class="temple-countdown-title" lang="ta">திருமண நாளை நோக்கி</h2>
-        <p class="scratch-instruction" id="scratchInstruction">
-          <span aria-hidden="true">↝</span>
-          <span>SCRATCH TO REVEAL</span>
-        </p>
         <div class="temple-timer" role="timer" aria-live="off">
           <div class="temple-timer-tile">
             <div class="temple-timer-value"><span class="temple-timer-number" data-unit="days">00</span><span
                 class="temple-timer-label">DAYS</span></div>
-            <div class="temple-timer-scratch" role="button" tabindex="0" aria-label="Scratch to reveal days">
-              <canvas></canvas>
-            </div>
           </div>
           <div class="temple-timer-tile">
             <div class="temple-timer-value"><span class="temple-timer-number" data-unit="hours">00</span><span
                 class="temple-timer-label">HOURS</span></div>
-            <div class="temple-timer-scratch" role="button" tabindex="0" aria-label="Scratch to reveal hours">
-              <canvas></canvas>
-            </div>
           </div>
           <div class="temple-timer-tile">
             <div class="temple-timer-value"><span class="temple-timer-number" data-unit="minutes">00</span><span
                 class="temple-timer-label">MINUTES</span></div>
-            <div class="temple-timer-scratch" role="button" tabindex="0" aria-label="Scratch to reveal minutes">
-              <canvas></canvas>
-            </div>
           </div>
           <div class="temple-timer-tile">
             <div class="temple-timer-value"><span class="temple-timer-number" data-unit="seconds">00</span><span
                 class="temple-timer-label">SECONDS</span></div>
-            <div class="temple-timer-scratch" role="button" tabindex="0" aria-label="Scratch to reveal seconds">
-              <canvas></canvas>
-            </div>
           </div>
         </div>
-        <p class="wedding-date-reveal" id="weddingDateReveal" hidden>
+        <p class="wedding-date-reveal">
           <span>THE WEDDING DAY</span>
           <strong>DECEMBER 14, 2026</strong>
         </p>
@@ -190,15 +149,15 @@
           href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Dineshkumar%20%26%20Suthesi%20Wedding&amp;dates=20261214T004500Z%2F20261214T014500Z&amp;location=Kumaravayalur%20Arulmigu%20Subramaniaswamy%20Temple%2C%20Tiruchirappalli%2C%20Tamil%20Nadu">நாள்காட்டியில்
           நம் நாள்</a>
       </div>
-      <button class="countdown-swipe-hint" id="countdownSwipeHint" type="button"
+      <button class="swipe-hint" type="button"
         aria-label="Select to view the wedding invitation">
-        <span class="countdown-double-arrow" aria-hidden="true"><i></i><i></i></span>
+        <span class="swipe-arrow" aria-hidden="true"><i></i><i></i></span>
         <span class="swipe-hint-label">SWIPE UP</span>
       </button>
     </section>
 
     <!-- 5 · Gratitude -->
-    <section class="gratitude-screen" id="gratitudeScreen" aria-label="திருமண அழைப்புச் செய்தி">
+    <section class="gratitude-screen" aria-label="திருமண அழைப்புச் செய்தி">
       <img class="screen-bg gratitude-background" src="./assets/countdown-background.webp" alt="" decoding="async">
       <canvas class="petal-canvas" id="petalCanvas" aria-hidden="true"></canvas>
       <div class="gratitude-content">
@@ -219,11 +178,10 @@
       </div>
     </section>
 
-    <div class="hint" id="hint">குத்துவிளக்கைத் தொடவும்</div>
+    <div class="hint">குத்துவிளக்கைத் தொடவும்</div>
     <div class="sr-only" id="status" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./js/main.js"></script>
 
 </body>
 
